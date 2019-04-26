@@ -125,7 +125,6 @@ class Spectral {
 			double[] ycoords = eigenDecomp.getArray()[EigVecIndex];
 			double time = -canvasW/2.0 + edgeBuffer;
 			double dt = (canvasW - 2*edgeBuffer) / (double)pointCount;
-			System.out.println(dt);
 			for (int i = 0; i < xcoords.length; i++) {
 				xcoords[i] = time;
 				time += dt;

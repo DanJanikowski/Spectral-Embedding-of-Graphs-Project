@@ -84,6 +84,13 @@ public class Embedding {
 		return false;
 	}
 
+	//For Qinqing
+	//====================================================================================================
+	void triangulateNodes() {
+
+	}
+	//====================================================================================================
+
 	void draw(GraphicsContext g) {
 		g.setFill(Color.WHITE);
 		double pointRadius = 4.0;

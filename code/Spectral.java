@@ -67,13 +67,6 @@ class Spectral {
 		redraw();
 	}
 
-	//For Qinqing
-	//====================================================================================================
-	void triangulatePoints() {
-
-	}
-	//====================================================================================================
-
 	// Change which eigenvectors are used to draw the spectral embedding
 	void changeEigVecIndex(int i) {
 		if (i == 0) {
@@ -229,7 +222,7 @@ class Spectral {
 			@Override
 			public void handle(ActionEvent actionEvent) {
 				editable.clearEdges();
-				triangulatePoints();
+				editable.triangulateNodes();
 				redraw();
 			}
 		};

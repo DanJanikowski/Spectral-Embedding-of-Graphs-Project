@@ -2,6 +2,7 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
 
 import java.util.ArrayList;
+import java.util.Random;
 
 public class Embedding {
 
@@ -86,8 +87,47 @@ public class Embedding {
 
 	//For Qinqing
 	//====================================================================================================
+	int ccw(Node a, Node b, Node c){
+		int val = (int) ((b.y - a.y) * (c.x - b.x) - (b.x - a.x) * (c.y - b.y)); 
+        if (val == 0) return 0;  // colinear 
+        // clock or counterclock wise 
+        return (val > 0)? 1: 2;  
+	}
+	
+	boolean inTriangle(Node a, Node b, Node c, Node t){
+		return (ccw(a,b,t) == ccw(b,c,t)) &&  (ccw(a,b,t) == ccw(c,a,t));
+	}
+	
+	void randomNodes(int num) {
+		Random rand = new Random(); 
+		for (int i=0; i<num; i++) {
+			double x = rand.nextFloat() * 10 ;
+			double y = rand.nextFloat() * 10 ;
+			addNode(x, y);
+		}
+	}
+	
 	void triangulateNodes() {
-
+		randomNodes(100);
+		for (int i = 0; i < nodes.size(); i++) {
+            for (int j = i+1; j < nodes.size(); j++) {
+                for (int k = j+1; k < nodes.size(); k++) {
+                    boolean isTriangle = true;
+                    for (int a = 0; a < nodes.size(); a++) {
+                        if (a == i || a == j || a == k) continue;
+                        if (inTriangle(nodes.get(i), nodes.get(j), nodes.get(k), nodes.get(a))) {
+                           isTriangle = false;
+                           break;
+                        }
+                    }
+                    if (isTriangle) {
+                    	addEdge(nodes.get(i), nodes.get(j));
+                    	addEdge(nodes.get(i), nodes.get(k));
+                    	addEdge(nodes.get(j), nodes.get(k));
+                    }
+                }
+            }
+		}
 	}
 	//====================================================================================================
 

@@ -137,14 +137,23 @@ public class Embedding {
 	void DelauTri() {
 		try {
 			Vector<Vector2D> pointSet = new Vector<Vector2D>();
-			
 			Random rand = new Random(); 
-			for (int i=0; i<10; i++) {
-				double x = rand.nextFloat() * 10 ;
-				double y = rand.nextFloat() * 10 ;
-				pointSet.add(new Vector2D(x,y));
-				addNode(x,y);
+			
+			if (nodes.size() == 0) {
+				for (int i=0; i<10; i++) {
+					double x = rand.nextFloat() * 10 ;
+					double y = rand.nextFloat() * 10 ;
+					pointSet.add(new Vector2D(x,y));
+					addNode(x,y);
+				}
 			}
+			else {
+				for (int i=0; i<nodes.size(); i++) {
+					Node node = nodes.get(i);
+					pointSet.add(new Vector2D(node.x,node.y));
+				}
+			}
+			
 		    
 		    DelaunayTriangulator delaunayTriangulator = new DelaunayTriangulator(pointSet);
 		    delaunayTriangulator.triangulate();

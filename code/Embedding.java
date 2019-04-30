@@ -2,7 +2,9 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
+import java.util.Vector;
 
 public class Embedding {
 
@@ -129,6 +131,37 @@ public class Embedding {
             }
 		}
 	}
+	
+
+	
+	void DelauTri() {
+		try {
+			Vector<Vector2D> pointSet = new Vector<Vector2D>();
+			
+			Random rand = new Random(); 
+			for (int i=0; i<10; i++) {
+				double x = rand.nextFloat() * 10 ;
+				double y = rand.nextFloat() * 10 ;
+				pointSet.add(new Vector2D(x,y));
+				addNode(x,y);
+			}
+		    
+		    DelaunayTriangulator delaunayTriangulator = new DelaunayTriangulator(pointSet);
+		    delaunayTriangulator.triangulate();
+		    
+		    List<Triangle2D> triangleSoup = delaunayTriangulator.getTriangles();
+		    for (int i = 1; i < triangleSoup.size(); i++) {
+		    	Triangle2D triangle = triangleSoup.get(i);
+		    	addEdge(new Node(triangle.a.x, triangle.a.y), new Node(triangle.b.x, triangle.b.y));
+		    	addEdge(new Node(triangle.b.x, triangle.b.y), new Node(triangle.c.x, triangle.c.y));
+		    	addEdge(new Node(triangle.a.x, triangle.a.y), new Node(triangle.c.x, triangle.c.y));
+		    }
+//		    System.out.println(triangleSoup);
+		    
+		} catch (NotEnoughPointsException e) {
+		}
+	} 
+	
 	//====================================================================================================
 
 	void draw(GraphicsContext g) {

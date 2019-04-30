@@ -1,7 +1,10 @@
 import javafx.application.Application;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
+import javafx.scene.Group;
 import javafx.scene.Scene;
+import javafx.scene.canvas.Canvas;
+import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.*;
@@ -17,6 +20,7 @@ public class Main extends Application {
         bp.setBackground(new Background(new BackgroundFill(Color.BLACK, CornerRadii.EMPTY, Insets.EMPTY)));
         Scene scene = new Scene(bp);
 		Spectral spectral = new Spectral(bp);
+		Embedding embedding = new Embedding();
 		
 		//Pane to hold buttons
 		TilePane tp = new TilePane();
@@ -61,6 +65,16 @@ public class Main extends Application {
                     case O:
                         spectral.changePlottingMethod();
                         break;
+                    case E:
+                    	System.out.println("test case E");
+                    	embedding.DelauTri();
+                    	final Canvas canvas = new Canvas(250,250);
+                    	GraphicsContext gc = canvas.getGraphicsContext2D();
+                    	embedding.draw(gc);
+                    	tp.getChildren().add(canvas);
+//                    	stage.setScene(s);
+                    	stage.show();
+                    	System.out.println("test case E end");
 					case X:
 						System.exit(1);
 						break;

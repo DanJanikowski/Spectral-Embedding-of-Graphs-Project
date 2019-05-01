@@ -1,10 +1,13 @@
 import javafx.application.Application;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
-import javafx.scene.Group;
 import javafx.scene.Scene;
-import javafx.scene.canvas.Canvas;
-import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.SceneAntialiasing;
+import javafx.scene.control.Toggle;
+import javafx.scene.control.ToggleButton;
+import javafx.scene.control.ToggleGroup;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.*;
@@ -18,36 +21,57 @@ public class Main extends Application {
     public void start(Stage stage) throws Exception{
         BorderPane bp = new BorderPane();
         bp.setBackground(new Background(new BackgroundFill(Color.BLACK, CornerRadii.EMPTY, Insets.EMPTY)));
-        Scene scene = new Scene(bp);
-		Spectral spectral = new Spectral(bp);
+        Spectral spectral = new Spectral(bp);
 		Embedding embedding = new Embedding();
 		
 		//Pane to hold buttons
 		TilePane tp = new TilePane();
 		bp.setBottom(tp);
-        Button addPoints = new Button("Add Points");
-		Button clearPoints = new Button("Clear Points");
-        Button makeTempEdges = new Button("Make edges");
+
+        Button addNodes = new Button("Add Nodes");
+        addNodes.setOnAction(spectral.addNodesEvent());
+        tp.getChildren().add(addNodes);
+
+		Button clearNodes = new Button("Clear Nodes + Edges");
+        clearNodes.setOnAction(spectral.clearNodesEvent());
+        tp.getChildren().add(clearNodes);
+
         Button clearTempEdges = new Button("Clear Edges");
-        Button createTriangulation = new Button("Triangulate Points");
-        Button makeSpectral = new Button("Spectral Embedding");
-        addPoints.setOnAction(spectral.createAddPointsEvent());
-		clearPoints.setOnAction(spectral.createClearEvent());
-        makeTempEdges.setOnAction(spectral.makeEdgesEvent());
         clearTempEdges.setOnAction(spectral.clearEdgesEvent());
-        createTriangulation.setOnAction(spectral.triangulatePointsEvent());
-		makeSpectral.setOnAction(spectral.createSpecEmbedEvent());
-        tp.getChildren().add(addPoints);
-		tp.getChildren().add(clearPoints);
-        tp.getChildren().add(makeTempEdges);
         tp.getChildren().add(clearTempEdges);
-        tp.getChildren().add(createTriangulation);
+
+        Button sortNodesByX = new Button("Sort By X");
+        sortNodesByX.setOnAction(spectral.sortXEvent());
+        tp.getChildren().add(sortNodesByX);
+        Button sortNodesByY = new Button("Sort By Y");
+        sortNodesByY.setOnAction(spectral.sortYEvent());
+        tp.getChildren().add(sortNodesByY);
+
+        Button makePathGraph = new Button("Make Path Graph");
+        makePathGraph.setOnAction(spectral.pathGraphEvent());
+        tp.getChildren().add(makePathGraph);
+
+        Button makeTreeGraph = new Button("Make Tree Graph");
+        makeTreeGraph.setOnAction(spectral.treeGraphEvent());
+        tp.getChildren().add(makeTreeGraph);
+
+        Button makeDelaunayTriang = new Button("Delaunay Triangulation");
+        makeDelaunayTriang.setOnAction(spectral.delaunayTriangEvent());
+        tp.getChildren().add(makeDelaunayTriang);
+
+        Button makeSpectral = new Button("Spectral Embedding");
+		makeSpectral.setOnAction(spectral.spectralEmbedEvent());
 		tp.getChildren().add(makeSpectral);
 
+        ToggleButton connectNodes = new ToggleButton("Toggle Connect");
+        connectNodes.setSelected(spectral.connecting);
+        connectNodes.setOnAction(spectral.toggleEvent());
+        tp.getChildren().add(connectNodes);
 
-        scene.setRoot(bp);
+
+        Scene scene = new Scene(bp, spectral.screenW, spectral.screenH, false, SceneAntialiasing.BALANCED);
         stage.setScene(scene);
-//		stage.setFullScreen(true);
+		stage.setFullScreen(true);
 		stage.show();
 		
 
@@ -65,16 +89,6 @@ public class Main extends Application {
                     case O:
                         spectral.changePlottingMethod();
                         break;
-                    case E:
-                    	System.out.println("test case E");
-                    	embedding.DelauTri();
-                    	final Canvas canvas = new Canvas(250,250);
-                    	GraphicsContext gc = canvas.getGraphicsContext2D();
-                    	embedding.draw(gc);
-                    	tp.getChildren().add(canvas);
-//                    	stage.setScene(s);
-                    	stage.show();
-                    	System.out.println("test case E end");
 					case X:
 						System.exit(1);
 						break;

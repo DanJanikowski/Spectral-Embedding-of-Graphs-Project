@@ -13,7 +13,7 @@ import javafx.stage.Screen;
 
 class Spectral {
 
-	private double screenW, screenH;
+	public double screenW, screenH;
 	private double canvasW, canvasH;
 	private double edgeBuffer = 20; // Closest distance points can be generated from the edge
 
@@ -25,7 +25,10 @@ class Spectral {
 
 	private int EigVecIndex = 1;
 	private int plottingMethod = 0; // 0 for x/y and 1 for time/y
+	private double[][] Adj;
 	private Matrix eigenDecomp;
+
+	boolean connecting = false;
 
 	Spectral(BorderPane bp){
 		rand = new Random();
@@ -33,10 +36,10 @@ class Spectral {
 		Rectangle2D screenBounds = Screen.getPrimary().getVisualBounds();
 		screenW = screenBounds.getMaxX();
 		screenH = screenBounds.getMaxY();
-//		canvasW = screenW / 2.0;
-//		canvasH = canvasW;
-		canvasW = 800;
-		canvasH = 800;
+		canvasW = screenW / 2.0;
+		canvasH = canvasW;
+//		canvasW = 800;
+//		canvasH = 800;
 
 		Canvas canvasLeft = new Canvas(canvasW, canvasH);
 		Canvas canvasRight = new Canvas(canvasW, canvasH);
@@ -56,8 +59,10 @@ class Spectral {
 			public void handle(MouseEvent event) {
 				double clickedX = event.getSceneX() - canvasW / 2.0;
 				double clickedY = -event.getSceneY() + canvasH / 2.0;
-//				System.out.println(clickedX + " " + clickedY);
-				editable.addNode(clickedX, clickedY);
+				if (!connecting || editable.getNodeCount() < 2)
+					editable.addNode(clickedX, clickedY);
+				else
+					editable.selectNode(clickedX, clickedY);
 				redraw();
 			}
 		});
@@ -67,12 +72,23 @@ class Spectral {
 		redraw();
 	}
 
+	void resetEmbeddings() {
+		EigVecIndex = 1;
+		editable.clearEmbedding();
+		spectralEmbedding.clearEmbedding();
+	}
+
 	// Change which eigenvectors are used to draw the spectral embedding
 	void changeEigVecIndex(int i) {
+		if (spectralEmbedding.getNodeCount() == 0) return;
 		if (i == 0) {
 			if (EigVecIndex > 0) EigVecIndex--;
 		} else if (i == 1) {
-			if (EigVecIndex < editable.getNodeCount() - 2) EigVecIndex++;
+			if (plottingMethod == 1) {
+				if (EigVecIndex < editable.getNodeCount() - 1) EigVecIndex++;
+			} else {
+				if (EigVecIndex < editable.getNodeCount() - 2) EigVecIndex++;
+			}
 		}
 		if (eigenDecomp != null)
 			recreateSpectralEmbedding();
@@ -80,6 +96,7 @@ class Spectral {
 	}
 	void changePlottingMethod() {
 		plottingMethod = (plottingMethod + 1) % 2;
+		if (EigVecIndex == editable.getNodeCount() - 1) EigVecIndex--;
 		if (eigenDecomp != null)
 			recreateSpectralEmbedding();
 		redraw();
@@ -88,16 +105,16 @@ class Spectral {
 	void createEigenDecomp() {
 		EigVecIndex = 1;
 
-		double[][] Atemp = editable.getAdjacency();
-		double[][] Dtemp = new double[Atemp.length][Atemp.length];
+		Adj = editable.getAdjacency();
+		double[][] Dtemp = new double[Adj.length][Adj.length];
 
 		for (int i = 0; i < Dtemp.length; i++) {
 			double sum = 0;
-			for (int j = 0; j < Atemp.length; j++)
-				sum += Atemp[i][j];
+			for (int j = 0; j < Adj.length; j++)
+				sum += Adj[i][j];
 			Dtemp[i][i] = sum;
 		}
-		Matrix A = new Matrix(Atemp);
+		Matrix A = new Matrix(Adj);
 		Matrix D = new Matrix(Dtemp);
 		Matrix L = D.minus(A);
 		eigenDecomp = L.eig().getV().transpose();
@@ -105,37 +122,40 @@ class Spectral {
 	void recreateSpectralEmbedding() {
 		spectralEmbedding.clearEmbedding();
 
-		double[][] Atemp = editable.getAdjacency();
-		int pointCount = Atemp.length;
+		int pointCount = Adj.length;
 
 		if (plottingMethod == 0) {
 			double[] xcoords = eigenDecomp.getArray()[EigVecIndex];
 			double[] ycoords = eigenDecomp.getArray()[EigVecIndex+1];
-			for (int i = 0; i < xcoords.length; i++)
-				spectralEmbedding.addNode(xcoords[i] * pointCount * 10, ycoords[i] * pointCount * 10);
+			double maxRad = 0;
+			for (int i = 0; i < pointCount; i++) {
+				double curRad = xcoords[i] * xcoords[i] + ycoords[i] * ycoords[i];
+				if (curRad > maxRad) maxRad = curRad;
+			}
+			double scaleFactor = (canvasW / 2.0 - edgeBuffer) / Math.sqrt(maxRad);
+			for (int i = 0; i < pointCount; i++)
+				spectralEmbedding.addNode(xcoords[i] * scaleFactor, ycoords[i] * scaleFactor);
 		} else if (plottingMethod == 1) {
-			double[] xcoords = new double[pointCount];
+			double[] tcoords = new double[pointCount];
 			double[] ycoords = eigenDecomp.getArray()[EigVecIndex];
 			double time = -canvasW/2.0 + edgeBuffer;
 			double dt = (canvasW - 2*edgeBuffer) / (double)pointCount;
-			for (int i = 0; i < xcoords.length; i++) {
-				xcoords[i] = time;
+			double maxYBound = 0;
+			for (int i = 0; i < pointCount; i++) {
+				tcoords[i] = time;
 				time += dt;
+				if (Math.abs(ycoords[i]) > maxYBound) maxYBound = Math.abs(ycoords[i]);
 			}
-			for (int i = 0; i < xcoords.length; i++)
-				spectralEmbedding.addNode(xcoords[i], ycoords[i] * pointCount * 10);
+			double yScale = (canvasH / 2.0 - edgeBuffer) / maxYBound;
+			for (int i = 0; i < tcoords.length; i++)
+				spectralEmbedding.addNode(tcoords[i], ycoords[i] * yScale);
 		}
-		for (int i = 0; i < Atemp.length; i++) {
-			for (int j = i + 1; j < Atemp[0].length; j++) {
-				if (Atemp[i][j] == 1)
+		for (int i = 0; i < Adj.length; i++) {
+			for (int j = i + 1; j < Adj[0].length; j++) {
+				if (Adj[i][j] == 1)
 					spectralEmbedding.addEdge(spectralEmbedding.getNode(i), spectralEmbedding.getNode(j));
 			}
 		}
-	}
-
-	void resetEmbeddings() {
-		editable.clearEmbedding();
-		spectralEmbedding.clearEmbedding();
 	}
 
 	void redraw() {
@@ -170,39 +190,20 @@ class Spectral {
 	}
 
 	// Events
-	EventHandler<ActionEvent> createClearEvent() {
+	EventHandler<ActionEvent> addNodesEvent() {
+		return new EventHandler<ActionEvent>() {
+			public void handle(ActionEvent e) {
+				for (int i = 0; i < 50; i++)
+					editable.addNode(rand.nextDouble() * (canvasW - 2.0 * edgeBuffer) - canvasW / 2.0 + edgeBuffer,
+							rand.nextDouble() * (canvasH - 2.0 * edgeBuffer) - canvasH / 2.0 + edgeBuffer);
+				redraw();
+			}
+		};
+	}
+	EventHandler<ActionEvent> clearNodesEvent() {
 		return new EventHandler<ActionEvent>() {
 			public void handle(ActionEvent e) {
 				resetEmbeddings();
-				redraw();
-			}
-		};
-	}
-	EventHandler<ActionEvent> createAddPointsEvent() {
-		return new EventHandler<ActionEvent>() {
-			public void handle(ActionEvent e) {
-				for (int i = 0; i < 100; i++)
-					editable.addNode(rand.nextDouble() * (canvasW - 2.0 * edgeBuffer) - canvasW / 2.0 + edgeBuffer,
-										rand.nextDouble() * (canvasH - 2.0 * edgeBuffer) - canvasH / 2.0 + edgeBuffer);
-				redraw();
-			}
-		};
-	}
-	EventHandler<ActionEvent> createSpecEmbedEvent() {
-		return new EventHandler<ActionEvent>() {
-			@Override
-			public void handle(ActionEvent actionEvent) {
-				createEigenDecomp();
-				recreateSpectralEmbedding();
-				redraw();
-			}
-		};
-	}
-	EventHandler<ActionEvent> makeEdgesEvent() {
-		return new EventHandler<ActionEvent>() {
-			@Override
-			public void handle(ActionEvent actionEvent) {
-				editable.makeEdges();
 				redraw();
 			}
 		};
@@ -217,13 +218,76 @@ class Spectral {
 			}
 		};
 	}
-	EventHandler<ActionEvent> triangulatePointsEvent() {
+	EventHandler<ActionEvent> sortXEvent() {
+		return new EventHandler<ActionEvent>() {
+			@Override
+			public void handle(ActionEvent actionEvent) {
+//				editable.clearEdges();
+				spectralEmbedding.clearEmbedding();
+				editable.sortByX();
+				redraw();
+			}
+		};
+	}
+	EventHandler<ActionEvent> sortYEvent() {
+		return new EventHandler<ActionEvent>() {
+			@Override
+			public void handle(ActionEvent actionEvent) {
+//				editable.clearEdges();
+				spectralEmbedding.clearEmbedding();
+				editable.sortByY();
+				redraw();
+			}
+		};
+	}
+
+	EventHandler<ActionEvent> pathGraphEvent() {
+		return new EventHandler<ActionEvent>() {
+			@Override
+			public void handle(ActionEvent actionEvent) {
+				editable.PathGraph();
+				redraw();
+			}
+		};
+	}
+	EventHandler<ActionEvent> treeGraphEvent() {
+		return new EventHandler<ActionEvent>() {
+			@Override
+			public void handle(ActionEvent actionEvent) {
+				editable.TreeGraph();
+				redraw();
+			}
+		};
+	}
+	EventHandler<ActionEvent> delaunayTriangEvent() {
 		return new EventHandler<ActionEvent>() {
 			@Override
 			public void handle(ActionEvent actionEvent) {
 				editable.clearEdges();
-				editable.triangulateNodes();
+				spectralEmbedding.clearEmbedding();
+				editable.DelauTri();
 				redraw();
+			}
+		};
+	}
+
+	EventHandler<ActionEvent> spectralEmbedEvent() {
+		return new EventHandler<ActionEvent>() {
+			@Override
+			public void handle(ActionEvent actionEvent) {
+				createEigenDecomp();
+				recreateSpectralEmbedding();
+				redraw();
+			}
+		};
+	}
+	EventHandler<ActionEvent> toggleEvent() {
+		return new EventHandler<ActionEvent>() {
+			@Override
+			public void handle(ActionEvent actionEvent) {
+				if (connecting) connecting = false;
+				else connecting = true;
+				System.out.println(connecting);
 			}
 		};
 	}

@@ -4,7 +4,7 @@ import java.util.List;
 
 public class DelaunayTriangulator {
 
-    private List<Vector2D> pointSet;
+    private ArrayList<Vector2D> pointSet;
     private TriangleSoup triangleSoup;
 
     /**
@@ -13,7 +13,7 @@ public class DelaunayTriangulator {
      * 
      * @param pointSet The point set to be triangulated
      */
-    public DelaunayTriangulator(List<Vector2D> pointSet) {
+    public DelaunayTriangulator(ArrayList<Vector2D> pointSet) {
         this.pointSet = pointSet;
         this.triangleSoup = new TriangleSoup();
     }
@@ -21,15 +21,9 @@ public class DelaunayTriangulator {
     /**
      * This method generates a Delaunay triangulation from the specified point
      * set.
-     * 
-     * @throws NotEnoughPointsException Thrown when the point set contains less than three points
      */
-    public void triangulate() throws NotEnoughPointsException {
+    public void triangulate() {
         triangleSoup = new TriangleSoup();
-
-        if (pointSet == null || pointSet.size() < 3) {
-            throw new NotEnoughPointsException("Less than three points in point set.");
-        }
 
         /**
          * In order for the in circumcircle test to not consider the vertices of
@@ -173,7 +167,7 @@ public class DelaunayTriangulator {
      *            The permutation used to shuffle the point set
      */
     public void shuffle(int[] permutation) {
-        List<Vector2D> temp = new ArrayList<Vector2D>();
+        ArrayList<Vector2D> temp = new ArrayList<Vector2D>();
         for (int i = 0; i < permutation.length; i++) {
             temp.add(pointSet.get(permutation[i]));
         }
